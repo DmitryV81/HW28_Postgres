@@ -1,0 +1,35 @@
+#on which address postgres will be listening
+listen_addresses = 'localhost, 192.168.57.11'
+#postgres port
+port = 5432
+#max coonections summary
+max_connections = 100
+log_directory = 'log'
+log_filename = 'postgresql-%a.log'
+log_rotation_age = 1d
+log_rotation_size = 0
+log_truncate_on_rotation = on
+max_wal_size = 1GB
+min_wal_size = 80MB
+log_line_prefix = '%m [%p] '
+#set timezone Moscow
+log_timezone = 'UTC+3'
+timezone = 'UTC+3'
+datestyle = 'iso, mdy'
+lc_messages = 'en_US.UTF-8'
+lc_monetary = 'en_US.UTF-8'
+lc_numeric = 'en_US.UTF-8'
+lc_time = 'en_US.UTF-8'
+default_text_search_config = 'pg_catalog.english'
+#apply connection when recovery process run
+hot_standby = on
+#replication on
+wal_level = replica
+#slave count
+max_wal_senders = 3
+#count of slots
+max_replication_slots = 3
+#slave inform master about workjob
+hot_standby_feedback = on
+#password encryption on
+password_encryption = scram-sha-256
