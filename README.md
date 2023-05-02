@@ -18,10 +18,80 @@
 
 После выполнения комманды vagrant up  и создания ВМ дальнейшая настройка ВМ происходит с помощью ansible
 
+Проверяем репликацию:
+
+1. На хосте node1 создаем базу данных test_otus:
+
+```
+[root@node1 ~]# sudo -u postgres psql                                                                                                                                                    
+could not change directory to "/root": Permission denied                                                                                                                                 
+psql (14.7)                                                                                                                                                                              
+Type "help" for help.                                                                                                                                                                    
+~                                                                                                                                                                                        
+postgres=# CREATE DATABASE otus_test;                                                                                                                                                    
+CREATE DATABASE
+```
+
+2. На хосте node2 выводим список баз данных:
+
+```
+[vagrant@node2 ~]$ sudo -u postgres psql
+could not change directory to "/home/vagrant": Permission denied
+psql (14.7)
+Type "help" for help.
+
+postgres=# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+-----------+----------+----------+-------------+-------------+-----------------------
+ otus      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ otus_test | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+(5 rows)
+```
+
+База данных otus_test появилась на хосте node2
+
+Далее проверяем статус репликации:
+
+1. На хосте node1:
+
+```
+postgres=# select * from pg_stat_replication;                                                                                                                                            
+  pid  | usesysid |   usename   |  application_name  |  client_addr  | client_hostname | client_port |         backend_start         | backend_xmin |   state   | sent_lsn  | write_lsn | flush_lsn | repla
+y_lsn |    write_lag    |    flush_lag    |   replay_lag    | sync_priority | sync_state |          reply_time                                                                           
+-------+----------+-------------+--------------------+---------------+-----------------+-------------+-------------------------------+--------------+-----------+-----------+-----------+-----------+------
+------+-----------------+-----------------+-----------------+---------------+------------+-------------------------------                                                                
+ 29293 |    16384 | replication | walreceiver        | 192.168.57.12 |                 |       56200 | 2023-05-02 16:42:19.859616-03 |          739 | streaming | 0/4000AF0 | 0/4000AF0 | 0/4000AF0 | 0/400
+0AF0  |                 |                 |                 |             0 | async      | 2023-05-02 16:49:02.064909-03                                                                 
+ 29297 |    16385 | barman      | barman_receive_wal | 192.168.57.13 |                 |       49572 | 2023-05-02 16:42:22.376179-03 |              | streaming | 0/4000AF0 | 0/4000AF0 | 0/4000000 |      
+      | 00:00:03.141536 | 00:06:31.579195 | 00:06:42.267279 |             0 | async      | 2023-05-02 16:49:04.670899-03                                                                 
+(2 rows)                                                                                                                                                                                 
+~          
+```
+
+2. На хосте node2:
+
+```
+postgres=# select * from pg_stat_wal_receiver;
+  pid  |  status   | receive_start_lsn | receive_start_tli | written_lsn | flushed_lsn | received_tli |      last_msg_send_time       |     last_msg_receipt_time     | latest_end_lsn |        latest_end_
+time        | slot_name |  sender_host  | sender_port |                                                                                                                                         conninfo   
+                                                                                                                                      
+-------+-----------+-------------------+-------------------+-------------+-------------+--------------+-------------------------------+-------------------------------+----------------+-------------------
+------------+-----------+---------------+-------------+----------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------
+ 28671 | streaming | 0/3000000         |                 1 | 0/4000AF0   | 0/4000AF0   |            1 | 2023-05-02 16:49:41.671539-03 | 2023-05-02 16:49:41.674278-03 | 0/4000AF0      | 2023-05-02 16:48:1
+1.483639-03 |           | 192.168.57.11 |        5432 | user=replication password=******** channel_binding=prefer dbname=replication host=192.168.57.11 port=5432 fallback_application_name=walreceiver ssl
+mode=prefer sslcompression=0 sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres target_session_attrs=any
+(1 row)
+```
 
 
-
-
+Проверяем резервное копирование.
 
 
 На сервере barman проверяем работу barman:
